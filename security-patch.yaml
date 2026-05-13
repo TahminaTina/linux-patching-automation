@@ -1,0 +1,25 @@
+---
+- name: Oracle Linux 8 Security Patching
+  hosts: workers
+  become: yes
+  tasks:
+    - name: Install security updates only
+      dnf:
+        name: '*'
+        security: yes
+        state: latest
+        update_cache: yes
+
+    - name: Check if a reboot is required
+      # Oracle Linux 8/RHEL 8 uses the 'needs-restarting' tool from dnf-utils
+      shell: "dnf needs-restarting -r"
+      register: reboot_required
+      ignore_errors: yes
+      failed_when: false
+      changed_when: false
+
+    - name: Reboot the server if required
+      reboot:
+        msg: "Rebooting for security patch compliance."
+        reboot_timeout: 600
+      when: reboot_required.rc != 0
